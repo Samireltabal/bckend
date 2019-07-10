@@ -6,6 +6,8 @@ use Config;
 use App\User;
 use Tymon\JWTAuth\JWTAuth;
 use App\Http\Controllers\Controller;
+use GuzzleHttp\Client;
+use GuzzleHttp\RequestOptions;
 use App\Api\V1\Requests\SignUpRequest;
 use App\Notifications\SignupActivate;
 use Symfony\Component\HttpKernel\Exception\HttpException;
@@ -46,11 +48,30 @@ class SignUpController extends Controller
                 'message' => 'This activation token is invalid.'
             ], 404);
         }
-
+        $this->createMqttUser($user->email);
         $user->active = true;
         $user->activation_token = '';
         $user->save();
 
         return $user;
+    }
+    private function createMqttUser($id) {
+        $appID = env("MQTT_APP_ID");
+        $appPass = env('MQTT_APP_PASS');        
+        $client = new Client([
+            // Base URI is used with relative requests
+            'base_uri' => 'http://127.0.0.1:8080/api/v3/',
+            // You can set any number of default request options.
+            'timeout'  => 4.0,
+            'auth' => [$appID, $appPass]
+        ]);
+        $res = $client->request('POST', 'auth_clientid', [
+            RequestOptions::JSON => ['clientid' => $id , 'password' => '12345678']
+        ]);
+        if ( $res->getStatusCode() == 200) {
+            return true;
+        }else {
+            return false;
+        }
     }
 }

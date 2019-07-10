@@ -24,16 +24,30 @@ class LoginController extends Controller
         $credentials = $request->only(['email', 'password']);
         $credentials['active'] = 1;
         $credentials['deleted_at'] = null;
-        try {
-            $token = Auth::guard()->attempt($credentials);
-
-            if(!$token) {
-                throw new AccessDeniedHttpException();
+        if ( $request->remember ) {
+            try {
+                $token = Auth::guard()->setTTL(432000)->attempt($credentials);
+    
+                if(!$token) {
+                    throw new AccessDeniedHttpException();
+                }
+    
+            } catch (JWTException $e) {
+                throw new HttpException(500);
             }
-
-        } catch (JWTException $e) {
-            throw new HttpException(500);
+        } else {
+            try {
+                $token = Auth::guard()->attempt($credentials);
+    
+                if(!$token) {
+                    throw new AccessDeniedHttpException();
+                }
+    
+            } catch (JWTException $e) {
+                throw new HttpException(500);
+            }
         }
+        
 
         return response()
             ->json([

@@ -21,6 +21,7 @@ $api->version('v1', function (Router $api) {
     $api->post('test', 'App\\Http\\Controllers\\DeviceController@tester');
     $api->get('myDevices', 'App\\Http\\Controllers\\DeviceController@getMyDevices')->middleware('jwt.auth');
     $api->delete('removeDevice', 'App\\Http\\Controllers\\DeviceController@removeDevice')->middleware('jwt.auth','devOwner');
+    $api->post('devOptions', 'App\\Http\\Controllers\\DeviceController@updateOptions')->middleware('jwt.auth','devOwner');
     $api->post('addShare', 'App\\Http\\Controllers\\DeviceController@addShare')->middleware('jwt.auth','devOwner');
     $api->post('removeShare', 'App\\Http\\Controllers\\DeviceController@removeShare')->middleware('jwt.auth','devOwner');
     $api->get('deviceLogin','App\\Http\\Controllers\\DeviceController@devLogin')->middleware('devAuth');

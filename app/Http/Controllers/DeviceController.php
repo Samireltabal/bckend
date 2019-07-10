@@ -93,6 +93,24 @@ class DeviceController extends BaseController
         return response()->json($device,200);
     }
     /*
+    *   User Function To Update Device Options 
+    *
+    */
+    public function updateOptions(Request $request) {
+        $options = $request->options;
+        $device_id = $request->device_id;
+        $device = Device::deviceid($device_id)->first();
+        $optionsJson = json_encode($options);
+        // return $optionsJson;
+        // $string = json_decode($options, true);
+        $device->options = $optionsJson;
+        if ( $device->save() ) {
+            return response()->json("{\"message\":\"successfully updated device data\"}",200);
+        }else{
+            return response()->json("{\"message\":\"Couldn`t save data\"}",400);
+        }
+    }
+    /*
     *   METHOD : GET
     *   Headers : Auth Token
     *   MiddleWares : active device , active token
