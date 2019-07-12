@@ -3,6 +3,7 @@
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Database\Migrations\Migration;
+use Illuminate\Support\Str;
 
 class CreateUsersTable extends Migration
 {
@@ -18,7 +19,7 @@ class CreateUsersTable extends Migration
             $table->string('name');
             $table->string('email')->unique();
             $table->string('password');
-            $table->uuid('mobile_id')->nullable();
+            $table->uuid('uuid')->default(Str::uuid());
             $table->integer('role_id');
             $table->boolean('active')->default(false);
             $table->string('activation_token');

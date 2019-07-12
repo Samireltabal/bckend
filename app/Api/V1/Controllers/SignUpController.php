@@ -7,6 +7,9 @@ use App\User;
 use Tymon\JWTAuth\JWTAuth;
 use App\Http\Controllers\Controller;
 use GuzzleHttp\Client;
+use App\mqtt_user ;
+use App\acl;
+use Carbon\Carbon;
 use GuzzleHttp\RequestOptions;
 use App\Api\V1\Requests\SignUpRequest;
 use App\Notifications\SignupActivate;
@@ -48,7 +51,7 @@ class SignUpController extends Controller
                 'message' => 'This activation token is invalid.'
             ], 404);
         }
-        $this->createMqttUser($user->email);
+        $this->handleMqtt($user);
         $user->active = true;
         $user->activation_token = '';
         $user->save();
@@ -73,5 +76,24 @@ class SignUpController extends Controller
         }else {
             return false;
         }
+    }
+    private function handleMqtt(User $user) {
+        $channel = $user->uuid;
+        $main_topic = "/$channel/#" ;        
+        $username = $user->email ; 
+        $password = $user->email ;
+        // create device auth
+        $user = new mqtt_user;
+        $user->username = $username;
+        $user->created = Carbon::now();
+        $user->password = hash('sha256',$password);
+        $user->save();
+        // create device acl
+        $acldev = new acl;
+        $acldev->allow = 1;
+        $acldev->username = $username;
+        $acldev->access = 3;
+        $acldev->topic = $main_topic;
+        $acldev->save();
     }
 }

@@ -7,11 +7,14 @@ use App\Device;
 use GuzzleHttp\Client;
 use GuzzleHttp\RequestOptions;
 use Auth;
+use Carbon\Carbon;
 use App\User;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller as BaseController;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\Response;
+use App\mqtt_user ;
+use App\acl ;
 use Illuminate\Foundation\Validation\ValidatesRequests;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 
@@ -30,6 +33,8 @@ class DeviceController extends BaseController
         if ( $current ) {
             return response()->json("{\"message\": \"Device $device_ID is already registered\"}",401);
         }
+        $user = User::find($request->user_id)->first();
+        $key = $user->uuid;
         $device = new Device;
         $device->device_mac = $request->device_mac;
         $device->internal_ip = $request->internal_ip;
@@ -43,7 +48,7 @@ class DeviceController extends BaseController
         $options = array('option1' => 'val1','option2' => 'val2' );
         $device->options = json_encode($options);
         if( $device->save() ){
-            if($this->createMqttUser($device_ID,$device->token)) {
+            if($this->handleMqtt($key,$device->device_id,$device->token)) {
                 return $device;
             }else{
                 return response("{\"message\": \"device is not completly registered\" }",401); 
@@ -84,13 +89,44 @@ class DeviceController extends BaseController
     *   PARAMETERS : TEST
     *   MiddleWares : TEST 
     */
-    public function tester(Request $request) {
-        $mac = $request->device_mac;
-        $device_ID = str_replace(":", "", $mac);
-        $device = Device::Deviceid($device_ID)->first()->get();
-        $resp = array('device_id'=> $device_ID);
-        return $this->createMqttUser($device_ID,$mac);
-        return response()->json($device,200);
+    public function tester() {
+        // $this->handlePairing('testKey','device1','privateToken');
+        // $this->handlePairing('testKey','user1','privateToken',true);
+        $users = new mqtt_user;
+        $acl = new acl;
+        $response = [
+            'users' => $users->all(),
+            'acl' => $acl->all()
+        ];
+        return response($response,200);
+    }
+    /*
+    *   Private functions to handle Device Pairing with mqtt server
+    *
+    */
+    private function handleMqtt(String $key, String $device_id, String $token, bool $user = false) {
+        $channel_pre = $key;
+        if ($user) {
+            $main_topic = "/$key/#" ;
+        }else {
+            $main_topic = "/$key/$device_id/#" ;
+        }
+        $username = $device_id ; 
+        $password = $token ;
+        // create device auth
+        $user = new mqtt_user;
+        $user->username = $username;
+        $user->created = Carbon::now();
+        $user->password = hash('sha256',$password);
+        $user->save();
+        // create device acl
+        $acldev = new acl;
+        $acldev->allow = 1;
+        $acldev->username = $username;
+        $acldev->access = 3;
+        $acldev->topic = $main_topic;
+        $acldev->save();
+        return true;
     }
     /*
     *   User Function To Update Device Options 
@@ -123,6 +159,7 @@ class DeviceController extends BaseController
             "device_id"=> $device->device_id,
             "channel"=> $device->channel,
             "options"=> json_decode($device->options),
+            "key"=> $device->user->uuid,
             "last_activity" => $device->updated_at->timestamp  
         );
         $device->touch();

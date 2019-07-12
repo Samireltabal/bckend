@@ -27,7 +27,7 @@ class LoginController extends Controller
         if ( $request->remember ) {
             try {
                 $token = Auth::guard()->setTTL(432000)->attempt($credentials);
-    
+
                 if(!$token) {
                     throw new AccessDeniedHttpException();
                 }
@@ -53,6 +53,7 @@ class LoginController extends Controller
             ->json([
                 'status' => 'ok',
                 'token' => $token,
+                'user' => Auth::user(),
                 'expires_in' => Auth::guard()->factory()->getTTL() * 60
             ]);
     }
