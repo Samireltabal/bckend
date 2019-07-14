@@ -43,12 +43,18 @@ class DeviceController extends BaseController
         $device->user_id = $request->user_id;
         $device->token = str_random(60);
         $device->version = $request->version;        
-        $device->channel = "upv" . $device_ID;
+        $device->channel =  $device_ID;
         $device->external_ip = $request->ip();
-        $options = array('option1' => 'val1','option2' => 'val2' );
+        $options = array(
+            "5" => "port1",
+            "6" => "port2",
+            "7" => "port3",
+            "8" => "port4",
+            "name"=> "device name"
+        );
         $device->options = json_encode($options);
         if( $device->save() ){
-            if($this->handleMqtt($key,$device->device_id,$device->token)) {
+            if($this->handleMqtt($key,$device->device_id,$device->token) && $this->handleMqttACL($key,$device->device_id)) {
                 return $device;
             }else{
                 return response("{\"message\": \"device is not completly registered\" }",401); 
@@ -81,7 +87,12 @@ class DeviceController extends BaseController
         $device = Device::deviceid($request->device_id)->first();
         $device->shares()->detach();
         $device->delete();
-        $this->deleteMqttUser($request->device_id);
+        $mqttUser = new mqtt_user;
+        $mqttUser = $mqttUser->deviceID($request->device_id);
+        $mqttUser->delete();
+        $mqttAcl = new acl;
+        $mqttAcl = $mqttUser->deviceID($request->device_id);
+        $mqttAcl->delete();
         return response()->json('success',200);
     }
     /*
@@ -105,12 +116,7 @@ class DeviceController extends BaseController
     *
     */
     private function handleMqtt(String $key, String $device_id, String $token, bool $user = false) {
-        $channel_pre = $key;
-        if ($user) {
-            $main_topic = "/$key/#" ;
-        }else {
-            $main_topic = "/$key/$device_id/#" ;
-        }
+        
         $username = $device_id ; 
         $password = $token ;
         // create device auth
@@ -118,8 +124,21 @@ class DeviceController extends BaseController
         $user->username = $username;
         $user->created = Carbon::now();
         $user->password = hash('sha256',$password);
-        $user->save();
+        if($user->save()) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+    private function handleMqttACL(String $key, String $device_id, bool $user = false) {
+        $username = $device_id ; 
         // create device acl
+        $channel_pre = $key;
+        if ($user) {
+            $main_topic = "/$key/#" ;
+        }else {
+            $main_topic = "/$key/$device_id/#" ;
+        }
         $acldev = new acl;
         $acldev->allow = 1;
         $acldev->username = $username;

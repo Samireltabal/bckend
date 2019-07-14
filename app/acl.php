@@ -10,6 +10,6 @@ class acl extends Model
     protected $table = 'mqtt_acl';
     public $timestamps = false;
     public function scopeDeviceid($query, String $devid) {
-        return $query->where('username','=',$devid);
+        return $query->where('username',$devid);
     }
 }

@@ -7,8 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 class Device extends Model
 {
     //
-    protected $fillable = [        
-    ];
+    protected $fillable = ['version','type'];
     protected $hidden = [        
     ];
     public function user() {

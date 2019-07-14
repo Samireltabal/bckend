@@ -22,10 +22,10 @@ class devAuth
             {
                 return $next($request);
             }else{
-                return response()->json('{"message": "invalid key"}',401); 
+                return response()->json('{"message": "invalid key" , "code": 401 }',401); 
             }            
         }else {
-            return response()->json('{"message": "no key provided"}',401);
+            return response()->json('{"message": "no key provided" , "code": 401 }',401);
         }
                 
         // 

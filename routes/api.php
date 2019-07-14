@@ -25,6 +25,7 @@ $api->version('v1', function (Router $api) {
     $api->post('addShare', 'App\\Http\\Controllers\\DeviceController@addShare')->middleware('jwt.auth','devOwner');
     $api->post('removeShare', 'App\\Http\\Controllers\\DeviceController@removeShare')->middleware('jwt.auth','devOwner');
     $api->get('deviceLogin','App\\Http\\Controllers\\DeviceController@devLogin')->middleware('devAuth');
+    $api->get('ota','App\\Http\\Controllers\\otaController@index')->middleware('devAuth');
     $api->group(['middleware' => 'jwt.auth'], function(Router $api) {
         $api->get('protected', function() {
             return response()->json([
