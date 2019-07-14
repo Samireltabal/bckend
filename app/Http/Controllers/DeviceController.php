@@ -91,7 +91,7 @@ class DeviceController extends BaseController
         $mqttUser = $mqttUser->deviceID($request->device_id);
         $mqttUser->delete();
         $mqttAcl = new acl;
-        $mqttAcl = $mqttUser->deviceID($request->device_id);
+        $mqttAcl = $mqttAcl->deviceID($request->device_id);
         $mqttAcl->delete();
         return response()->json('success',200);
     }
